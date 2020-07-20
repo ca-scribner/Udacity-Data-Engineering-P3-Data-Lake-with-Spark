@@ -3,8 +3,8 @@ from datetime import datetime
 import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col
-from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format
-from pyspark.sql.types import StructType, StructField, DoubleType, StringType, IntegerType
+from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format, from_unixtime
+from pyspark.sql.types import StructType, StructField, DoubleType, StringType, IntegerType, TimestampType
 
 
 config = configparser.ConfigParser()
@@ -21,6 +21,7 @@ def create_spark_session():
     spark = SparkSession \
         .builder \
         .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.0") \
+        .config("mapreduce.fileoutputcommitter.algorithm.version", "2") \
         .getOrCreate()
     return spark
 
@@ -107,7 +108,7 @@ def process_log_data(spark, log_data, output_location):
     df = spark.read.json(log_data)
     
     # filter by actions for song plays
-    df = df.filter(F.col("page") == "NextSong")
+    df = df.filter(col("page") == "NextSong")
 
     # extract columns for users table    
     users_table = df.selectExpr(
@@ -125,10 +126,10 @@ def process_log_data(spark, log_data, output_location):
     users_table.write.parquet(users_output_file)
 
     # create datetime column from original timestamp column
-    df_datetime = df.select('ts').withColumn('datetime', from_unixtime(F.col("ts") / 1000).cast(TimestampType()))
+    df_datetime = df.select('ts').withColumn('datetime', from_unixtime(col("ts") / 1000).cast(TimestampType()))
     # extract columns to create time table
     time_table = df_datetime.select(
-        F.col("ts").alias('start_time'),
+        col("ts").alias('start_time'),
         hour("datetime").alias('hour'),
         dayofmonth("datetime").alias('day'),
         weekofyear("datetime").alias("week"),
@@ -155,14 +156,14 @@ def process_log_data(spark, log_data, output_location):
                        .join(song_df.select(*song_columns), song_df.title == df.song)
                        .join(time_table.select(*time_columns), time_table.start_time == df.ts)
                        .select(
-                           F.col("ts").alias("start_time"),
-                           F.col("userId").alias("user_id"),
+                           col("ts").alias("start_time"),
+                           col("userId").alias("user_id"),
                            "level",
                            "song_id",
                            "artist_id",
-                           F.col("sessionId").alias("session_id"),
+                           col("sessionId").alias("session_id"),
                            "location",
-                           F.col("userAgent").alias("user_agent"),
+                           col("userAgent").alias("user_agent"),
                            "year",
                            "month",
                        )
