@@ -1,5 +1,5 @@
 # Udacity Data Engineering Nanodegree
-# Project: Data Warehouse
+# Project: Data Lake with Spark
 
 This project is a mockup for a fictional music streaming service, Sparkify, which wants to analyze the data they've collected on user activity.  They're interested in taking their existing data warehouse to a data lake by extracting existing JSON data from S3, processing it with Spark, and loading the results into S3 as dimensional tables for their analytics team to investigate what songs their users are listening to.  
 
